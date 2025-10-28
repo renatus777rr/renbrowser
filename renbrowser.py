@@ -196,7 +196,7 @@ def check_for_update():
                 QMessageBox.Yes | QMessageBox.No
             )
             if reply == QMessageBox.Yes:
-                url_code = "https://raw.githubusercontent.com/renatus777rr/renbrowser/refs/heads/main/renbrowser.py"
+                url_code = "https://raw.githubusercontent.com/renatus777rr/renbrowser/main/renbrowser.py?nocache=1"
                 with urllib.request.urlopen(url_code, timeout=10) as resp:
                     new_code = resp.read().decode("utf-8")
                 current_file = os.path.realpath(sys.argv[0])
