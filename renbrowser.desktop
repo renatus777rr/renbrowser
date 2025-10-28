@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=RenBrowser
+Exec=renbrowser
+Type=Application
+Categories=Network;WebBrowser;
+Terminal=false
