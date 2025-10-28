@@ -185,7 +185,7 @@ class Browser(QMainWindow):
 
 def check_for_update():
     try:
-        url_ver = "https://raw.githubusercontent.com/renatus777rr/renbrowser/refs/heads/main/verupdate.txt"
+        url_ver = "https://raw.githubusercontent.com/renatus777rr/renbrowser/main/verupdate.txt?nocache=1"
         with urllib.request.urlopen(url_ver, timeout=5) as resp:
             latest_version = resp.read().decode("utf-8").strip()
         if latest_version != VERSION:
