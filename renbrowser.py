@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
 
 APP_NAME = "renbrowser"
-VERSION = "0.100.1"
+VERSION = "0.100.2"
 
 class DownloadItemWidget(QFrame):
     def __init__(self, download_item, parent=None):
