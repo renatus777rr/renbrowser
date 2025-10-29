@@ -207,7 +207,7 @@ class BrowserTab(QWidget):
         self.view = QWebEngineView()
         self.view.setPage(self.page)
 
-        # Tab button (title)
+        # Title button
         self.title_btn = QPushButton("New Tab")
         self.title_btn.setCheckable(True)
         self.title_btn.setStyleSheet(
@@ -219,7 +219,7 @@ class BrowserTab(QWidget):
         self.close_btn.setFixedSize(20, 20)
         self.close_btn.setStyleSheet("QPushButton { background: #f0f0f0; }")
 
-        # Layout for tab header
+        # Header widget containing both
         self.header = QWidget()
         h = QHBoxLayout()
         h.setContentsMargins(0, 0, 0, 0)
@@ -236,6 +236,7 @@ class BrowserTab(QWidget):
         self.title_btn.setText(title if title else "New Tab")
         if callable(on_title_change):
             on_title_change(self, title)
+
 
 class Browser(QMainWindow):
     def __init__(self):
@@ -338,22 +339,29 @@ class Browser(QMainWindow):
             print("Failed to save settings:", e)
 
     def add_tab(self):
-    tab = BrowserTab(self.profile,
-    on_title_change=self._tab_title_changed,
-    on_close=self.close_tab)
-    tab.title_btn.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
-    # Insert the tab header (title + close button) before the "+" button
-    self.tabs_bar.insertWidget(self.tabs_bar.count() - 2, tab.header)
-    self.tabs.append(tab)
-    self.activate_tab(tab)
+      tab = BrowserTab(self.profile,
+                       on_title_change=self._tab_title_changed,
+                       on_close=self.close_tab)
+      tab.title_btn.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
+      self.tabs_bar.insertWidget(self.tabs_bar.count() - 2, tab.header)
+      self.tabs.append(tab)
+      self.activate_tab(tab)
 
     def close_tab(self, tab):
-    if tab not in self.tabs:
+      if tab not in self.tabs:
         return
-    # Remove from layout
-    self.tabs_bar.removeWidget(tab.header)
-    tab.header.setParent(None)
-    self.tabs.remove(tab)
+      self.tabs_bar.removeWidget(tab.header)
+      tab.header.setParent(None)
+      self.tabs.remove(tab)
+
+    # If closing the current tab, switch to another
+    if self.current_tab == tab:
+        if self.tabs:
+            self.activate_tab(self.tabs[-1])
+        else:
+            self.current_tab = None
+            self.address_bar.clear()
+
 
     # If closing the current tab, switch to another
     if self.current_tab == tab:
@@ -365,32 +373,30 @@ class Browser(QMainWindow):
 
 
     def activate_tab(self, tab):
-        # Uncheck all, check selected
-        for t in self.tabs:
-            t.button.setChecked(False)
-        tab.button.setChecked(True)
+    # Uncheck all, check selected
+    for t in self.tabs:
+        t.title_btn.setChecked(False)
+    tab.title_btn.setChecked(True)
 
-        # Swap view
-        if self.current_tab is not None:
-            # Remove old view from layout
-            for i in reversed(range(self.view_layout.count())):
-                item = self.view_layout.itemAt(i)
-                w = item.widget()
-                if w:
-                    self.view_layout.removeWidget(w)
-                    w.setParent(None)
-        self.view_layout.addWidget(tab.view)
-        self.current_tab = tab
+    # Swap view
+    if self.current_tab is not None:
+        for i in reversed(range(self.view_layout.count())):
+            item = self.view_layout.itemAt(i)
+            w = item.widget()
+            if w:
+                self.view_layout.removeWidget(w)
+                w.setParent(None)
+    self.view_layout.addWidget(tab.view)
+    self.current_tab = tab
 
-        # Update address bar with current URL
-        url = tab.view.url().toDisplayString()
-        self.address_bar.setText(url)
+    # Update address bar
+    url = tab.view.url().toDisplayString()
+    self.address_bar.setText(url)
 
-        # Connect URL change to address bar
-        tab.view.urlChanged.connect(self.sync_address_bar)
-        # Make sure Back/Refresh work on current tab
-        self.back_btn.setEnabled(True)
-        self.refresh_btn.setEnabled(True)
+    tab.view.urlChanged.connect(self.sync_address_bar)
+    self.back_btn.setEnabled(True)
+    self.refresh_btn.setEnabled(True)
+
 
     def _tab_title_changed(self, tab, title):
         # No extra actions needed here, button text is already updated
