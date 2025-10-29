@@ -200,18 +200,40 @@ class SettingsWindow(QDialog):
     def check_update(self):
         check_for_update()
 
-class BrowserTab:
-    def __init__(self, profile, on_title_change):
+class BrowserTab(QWidget):
+    def __init__(self, profile, on_title_change, on_close):
+        super().__init__()
         self.page = QWebEnginePage(profile)
         self.view = QWebEngineView()
         self.view.setPage(self.page)
-        self.button = QPushButton("New Tab")
-        self.button.setCheckable(True)
-        self.button.setStyleSheet("QPushButton { background: white; } QPushButton:checked { background: #d0d0d0; }")
+
+        # Tab button (title)
+        self.title_btn = QPushButton("New Tab")
+        self.title_btn.setCheckable(True)
+        self.title_btn.setStyleSheet(
+            "QPushButton { background: white; } QPushButton:checked { background: #d0d0d0; }"
+        )
+
+        # Close button
+        self.close_btn = QPushButton("X")
+        self.close_btn.setFixedSize(20, 20)
+        self.close_btn.setStyleSheet("QPushButton { background: #f0f0f0; }")
+
+        # Layout for tab header
+        self.header = QWidget()
+        h = QHBoxLayout()
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(2)
+        h.addWidget(self.title_btn)
+        h.addWidget(self.close_btn)
+        self.header.setLayout(h)
+
+        # Signals
         self.page.titleChanged.connect(lambda title: self._update_title(title, on_title_change))
+        self.close_btn.clicked.connect(lambda: on_close(self))
 
     def _update_title(self, title, on_title_change):
-        self.button.setText(title if title else "New Tab")
+        self.title_btn.setText(title if title else "New Tab")
         if callable(on_title_change):
             on_title_change(self, title)
 
@@ -316,11 +338,31 @@ class Browser(QMainWindow):
             print("Failed to save settings:", e)
 
     def add_tab(self):
-        tab = BrowserTab(self.profile, on_title_change=self._tab_title_changed)
-        tab.button.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
-        self.tabs_bar.insertWidget(self.tabs_bar.count() - 1, tab.button)
-        self.tabs.append(tab)
-        self.activate_tab(tab)
+    tab = BrowserTab(self.profile,
+    on_title_change=self._tab_title_changed,
+    on_close=self.close_tab)
+    tab.title_btn.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
+    # Insert the tab header (title + close button) before the "+" button
+    self.tabs_bar.insertWidget(self.tabs_bar.count() - 2, tab.header)
+    self.tabs.append(tab)
+    self.activate_tab(tab)
+
+    def close_tab(self, tab):
+    if tab not in self.tabs:
+        return
+    # Remove from layout
+    self.tabs_bar.removeWidget(tab.header)
+    tab.header.setParent(None)
+    self.tabs.remove(tab)
+
+    # If closing the current tab, switch to another
+    if self.current_tab == tab:
+        if self.tabs:
+            self.activate_tab(self.tabs[-1])
+        else:
+            self.current_tab = None
+            self.address_bar.clear()
+
 
     def activate_tab(self, tab):
         # Uncheck all, check selected
