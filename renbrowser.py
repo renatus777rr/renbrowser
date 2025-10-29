@@ -373,10 +373,9 @@ class Browser(QMainWindow):
 
 
     def activate_tab(self, tab):
-    # Uncheck all, check selected
-    for t in self.tabs:
-        t.title_btn.setChecked(False)
-    tab.title_btn.setChecked(True)
+      for t in self.tabs:
+         t.title_btn.setChecked(False)
+         tab.title_btn.setChecked(True)
 
     # Swap view
     if self.current_tab is not None:
