@@ -293,9 +293,9 @@ class Browser(QMainWindow):
         # Central layout
         central = QWidget()
         layout = QVBoxLayout()
-        # Tabs bar goes ABOVE topbar (as requested)
-        layout.addLayout(self.tabs_bar)
+        layout.addLayout(self.tabs_bar)   # Tabs bar above topbar
         layout.addLayout(topbar)
+
         # View container
         self.view_container = QWidget()
         self.view_layout = QVBoxLayout()
@@ -317,13 +317,13 @@ class Browser(QMainWindow):
         # Signals for downloads from profile
         self.profile.downloadRequested.connect(self.handle_download)
 
+    # ---------------- Settings ----------------
     def _load_settings(self):
         if not os.path.exists(CONFIG_PATH):
             return DEFAULT_SETTINGS.copy()
         try:
             with open(CONFIG_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Merge defaults to ensure keys exist
             merged = DEFAULT_SETTINGS.copy()
             merged.update(data or {})
             return merged
@@ -338,69 +338,63 @@ class Browser(QMainWindow):
         except Exception as e:
             print("Failed to save settings:", e)
 
+    # ---------------- Tabs ----------------
     def add_tab(self):
-      tab = BrowserTab(self.profile,
-                       on_title_change=self._tab_title_changed,
-                       on_close=self.close_tab)
-      tab.title_btn.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
-      self.tabs_bar.insertWidget(self.tabs_bar.count() - 2, tab.header)
-      self.tabs.append(tab)
-      self.activate_tab(tab)
+        tab = BrowserTab(
+            self.profile,
+            on_title_change=self._tab_title_changed,
+            on_close=self.close_tab
+        )
+        tab.title_btn.clicked.connect(lambda checked, t=tab: self.activate_tab(t))
+        self.tabs_bar.insertWidget(self.tabs_bar.count() - 2, tab.header)
+        self.tabs.append(tab)
+        self.activate_tab(tab)
 
     def close_tab(self, tab):
-      if tab not in self.tabs:
-        return
-      self.tabs_bar.removeWidget(tab.header)
-      tab.header.setParent(None)
-      self.tabs.remove(tab)
+        if tab not in self.tabs:
+            return
+        self.tabs_bar.removeWidget(tab.header)
+        tab.header.setParent(None)
+        self.tabs.remove(tab)
 
-    # If closing the current tab, switch to another
-    if self.current_tab == tab:
-        if self.tabs:
-            self.activate_tab(self.tabs[-1])
-        else:
-            self.current_tab = None
-            self.address_bar.clear()
-
-
-    # If closing the current tab, switch to another
-    if self.current_tab == tab:
-        if self.tabs:
-            self.activate_tab(self.tabs[-1])
-        else:
-            self.current_tab = None
-            self.address_bar.clear()
-
+        # If closing the current tab, switch to another
+        if self.current_tab == tab:
+            if self.tabs:
+                self.activate_tab(self.tabs[-1])
+            else:
+                self.current_tab = None
+                self.address_bar.clear()
 
     def activate_tab(self, tab):
-      for t in self.tabs:
-         t.title_btn.setChecked(False)
-         tab.title_btn.setChecked(True)
+        for t in self.tabs:
+            t.title_btn.setChecked(False)
+        tab.title_btn.setChecked(True)
 
-    # Swap view
-    if self.current_tab is not None:
-        for i in reversed(range(self.view_layout.count())):
-            item = self.view_layout.itemAt(i)
-            w = item.widget()
-            if w:
-                self.view_layout.removeWidget(w)
-                w.setParent(None)
-    self.view_layout.addWidget(tab.view)
-    self.current_tab = tab
+        # Swap view
+        if self.current_tab is not None:
+            for i in reversed(range(self.view_layout.count())):
+                item = self.view_layout.itemAt(i)
+                w = item.widget()
+                if w:
+                    self.view_layout.removeWidget(w)
+                    w.setParent(None)
 
-    # Update address bar
-    url = tab.view.url().toDisplayString()
-    self.address_bar.setText(url)
+        self.view_layout.addWidget(tab.view)
+        self.current_tab = tab
 
-    tab.view.urlChanged.connect(self.sync_address_bar)
-    self.back_btn.setEnabled(True)
-    self.refresh_btn.setEnabled(True)
+        # Update address bar
+        url = tab.view.url().toDisplayString()
+        self.address_bar.setText(url)
 
+        tab.view.urlChanged.connect(self.sync_address_bar)
+        self.back_btn.setEnabled(True)
+        self.refresh_btn.setEnabled(True)
 
     def _tab_title_changed(self, tab, title):
         # No extra actions needed here, button text is already updated
         pass
 
+    # ---------------- Navigation ----------------
     def sync_address_bar(self, url: QUrl):
         self.address_bar.setText(url.toDisplayString())
 
@@ -425,11 +419,9 @@ class Browser(QMainWindow):
         t = text.strip()
         if not t:
             return QUrl()
-        # If looks like a URL (has scheme or a dot and no spaces), treat as URL.
         if "://" in t or ("." in t and " " not in t):
             return QUrl(t if "://" in t else f"https://{t}")
 
-        # Otherwise, use search engine
         engine = self.settings.get("search_engine", "google")
         if engine in SEARCH_TEMPLATES:
             template = SEARCH_TEMPLATES[engine]
@@ -448,11 +440,14 @@ class Browser(QMainWindow):
         if self.current_tab and url.isValid():
             self.current_tab.view.load(url)
 
+    # ---------------- Downloads ----------------
     def handle_download(self, download_item):
         suggested_name = download_item.suggestedFileName()
         default_dir = os.path.join(HOME_DIR, "Downloads")
         os.makedirs(default_dir, exist_ok=True)
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save File", os.path.join(default_dir, suggested_name))
+        save_path, _ = QFileDialog.getSaveFileName(
+            self, "Save File", os.path.join(default_dir, suggested_name)
+        )
         if not save_path:
             download_item.cancel()
             return
