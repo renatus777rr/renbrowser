@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
 
 APP_NAME = "renbrowser"
-VERSION = "0.100.3"
+VERSION = "0.100.4"
 
 # Paths
 HOME_DIR = os.path.expanduser("~")
